@@ -113,3 +113,43 @@ In this case the output will be:
 The indexes should be read from right to left:
 
 * `InlinePolicies.Statement.Action.4.2.0`: InlinePolicies with index 0 and Statement with index 2 and Action with index 4
+
+### Structs
+
+You can also use the library to flatten any valid struct simply Marshalling the struct to a JSON string
+
+```golang
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/notdodo/goflat"
+)
+
+type Sub struct {
+	A int
+	B string
+	C []SubSub
+}
+
+type SubSub struct {
+	D int
+}
+
+func main() {
+	structOne := Sub{
+		A: 3,
+		B: "hello",
+		C: []SubSub{
+			{D: 10}, {D: 11},
+		},
+	}
+
+	jsonStr, _ := json.Marshal(structOne)
+	fmt.Println(goflat.Flat(string(jsonStr), "", "."))
+}
+```
+
+The output is: `{"A":3,"B":"hello","C.D.0":10,"C.D.1":11}`
