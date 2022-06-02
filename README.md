@@ -1,6 +1,6 @@
 # goflat
 
-Flatten complex JSON structures to a one-dimensional map (JSON key/value).
+Flatten complex JSON structures to a one-dimensional map (JSON key/value) that can be converted to a `map[string]interface{}`.
 
 ## Examples
 
@@ -109,6 +109,8 @@ In this case the output will be:
    }
 ]
 ```
+
+The `[]map[string]interface{}` can be created using `json.Unmarshal([]byte(myJsonString), &myArrayMapStringInterface)`
 
 The indexes should be read from right to left:
 
