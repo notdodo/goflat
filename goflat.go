@@ -1,9 +1,10 @@
 package goflat
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
+
+	oj "github.com/ohler55/ojg/oj"
 )
 
 var ErrInvalidType = errors.New("not a valid JSON input")
@@ -11,27 +12,21 @@ var ErrInvalidType = errors.New("not a valid JSON input")
 // Convert a JSON string to a flat JSON string
 // Only accepted inputs are: JSON objects or array of JSON objects
 func Flat(jsonStr, prefix, separator string) (string, error) {
-	var unflattenInterface interface{}
-	err := json.Unmarshal([]byte(jsonStr), &unflattenInterface)
+	unflattenInterface, err := oj.ParseString(jsonStr)
 	if err != nil {
 		return "", err
 	}
 
-	switch unflattenInterface.(type) {
+	switch v := unflattenInterface.(type) {
 	case []interface{}: // [{"a": 1}]
-		var unflattenArrayMap []map[string]interface{}
-
-		if err := json.Unmarshal([]byte(jsonStr), &unflattenArrayMap); err != nil {
-			return "", err
+		var flattenArrayMap []map[string]interface{}
+		for _, element := range v {
+			flattenArrayMap = append(flattenArrayMap, flattenMap(element.(map[string]interface{}), prefix, separator))
 		}
-		return flattenArray(unflattenArrayMap, prefix, separator)
+		return oj.JSON(flattenArrayMap), nil
 	case map[string]interface{}: // {"a": 1}
-		var unflattenMap map[string]interface{}
-
-		if err := json.Unmarshal([]byte(jsonStr), &unflattenMap); err != nil {
-			return "", err
-		}
-		return flattenMap(unflattenMap, prefix, separator)
+		flattenArrayMap := flattenMap(v, prefix, separator)
+		return oj.JSON(flattenArrayMap), nil
 	default:
 		return "", ErrInvalidType
 	}
@@ -74,19 +69,9 @@ func flattenArray(unflattenArrayMap []map[string]interface{}, prefix, separator 
 		outputArrayMap = append(outputArrayMap, flatMap)
 	}
 
-	flatByteMap, err := json.Marshal(&outputArrayMap)
-	if err != nil {
-		return "", err
-	}
-	return string(flatByteMap), nil
+	return oj.JSON(&outputArrayMap), nil
 }
 
-func flattenMap(unflattenMap map[string]interface{}, prefix, separator string) (string, error) {
-	flatMap := flatten(unflattenMap, prefix, separator, true)
-
-	flatByteMap, err := json.Marshal(&flatMap)
-	if err != nil {
-		return "", err
-	}
-	return string(flatByteMap), nil
+func flattenMap(unflattenMap map[string]interface{}, prefix, separator string) map[string]interface{} {
+	return flatten(unflattenMap, prefix, separator, true)
 }

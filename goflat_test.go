@@ -1,26 +1,40 @@
 package goflat
 
 import (
-	"reflect"
 	"testing"
+
+	oj "github.com/ohler55/ojg/oj"
 )
 
 func TestFlatten(t *testing.T) {
 	tests := []struct {
 		test     string
-		expected string
+		expected map[string]interface{}
 	}{
 		{
-			test:     `{"a":"3","c":4,"b":{"d":"5","e":6}}`,
-			expected: `{"a":"3","b.d":"5","b.e":6,"c":4}`,
+			test: `{"a":"3","c":4,"b":{"d":"5","e":6}}`,
+			expected: map[string]interface{}{
+				"a":   "3",
+				"c":   int64(4),
+				"b.d": "5",
+				"b.e": int64(6),
+			},
 		},
 		{
-			test:     `{"a": "3", "b": {"c":true}}`,
-			expected: `{"a":"3","b.c":true}`,
+			test: `{"a": "3", "b": {"c":true}}`,
+			expected: map[string]interface{}{
+				"a":   "3",
+				"b.c": true,
+			},
 		},
 		{
-			test:     `[{"a": "3"}, {"b": "3", "C": [{"c": 10}, {"d": 11}]}]`,
-			expected: `[{"a":"3"},{"C.c.0":10,"C.d.1":11,"b":"3"}]`,
+			test: `[{"a": "3"}, {"b": "3", "C": [{"c": 10}, {"d": 11}]}]`,
+			expected: map[string]interface{}{
+				"a":     "3",
+				"b":     "3",
+				"C.c.0": int64(10),
+				"C.d.1": int64(11),
+			},
 		},
 		{
 			test: `[{
@@ -66,7 +80,14 @@ func TestFlatten(t *testing.T) {
 							}
 						]
             		}]`,
-			expected: `[{"InlinePolicies.PolicyName.0":"policy-s3-operator","InlinePolicies.Statement.Action.0.0.0":"s3:ListAllMyBuckets","InlinePolicies.Statement.Action.0.1.0":"s3:ListBucket","InlinePolicies.Statement.Action.0.2.0":"s3:PutObject","InlinePolicies.Statement.Action.1.1.0":"s3:GetBucketLocation","InlinePolicies.Statement.Action.1.2.0":"s3:GetObject","InlinePolicies.Statement.Action.2.2.0":"s3:AbortMultipartUpload","InlinePolicies.Statement.Action.3.2.0":"s3:ListMultipartUploadParts","InlinePolicies.Statement.Action.4.2.0":"s3:ListBucketMultipartUploads","InlinePolicies.Statement.Effect.0.0":"Allow","InlinePolicies.Statement.Effect.1.0":"Allow","InlinePolicies.Statement.Effect.2.0":"Allow","InlinePolicies.Statement.Resource.0.0.0":"arn:aws:s3:::*","InlinePolicies.Statement.Resource.0.1.0":"arn:aws:s3:::personal-s3-bucket/*","InlinePolicies.Statement.Resource.0.2.0":"arn:aws:s3:::personal-s3-bucket/*","UserId":"AIDARRRRRRRRRRRR","UserName":"s3-operator"}]`},
+			expected: map[string]interface{}{
+				"UserId":                                  "AIDARRRRRRRRRRRR",
+				"InlinePolicies.PolicyName.0":             "policy-s3-operator",
+				"InlinePolicies.Statement.Action.4.2.0":   "s3:ListBucketMultipartUploads",
+				"InlinePolicies.Statement.Effect.1.0":     "Allow",
+				"InlinePolicies.Statement.Resource.0.1.0": "arn:aws:s3:::personal-s3-bucket/*",
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -75,8 +96,43 @@ func TestFlatten(t *testing.T) {
 			t.Errorf("[X] Test failed with error: %v", err)
 			continue
 		}
-		if !reflect.DeepEqual(got, test.expected) {
-			t.Errorf("mismatch, got: %v wanted: %v", got, test.expected)
+
+		gotMap, err := oj.ParseString(got)
+		if err != nil {
+			t.Errorf("[X] Test failed with error: %v", err)
+			continue
+		}
+
+		switch gotMapType := gotMap.(type) {
+		case []interface{}: // [{"a": 1}]
+			for testKey, testValue := range test.expected {
+				testOk := false
+				for _, gotMapTypeObject := range gotMapType {
+					if val, ok := gotMapTypeObject.(map[string]interface{})[testKey]; ok {
+						if val == testValue {
+							testOk = true
+						}
+					}
+				}
+				if !testOk {
+					t.Errorf("mismatch, got: %v wanted: %v:%v", gotMapType, testKey, testValue)
+					continue
+				}
+			}
+		case map[string]interface{}: // {"a": 1}
+			for testKey, testValue := range test.expected {
+				if val, ok := gotMapType[testKey]; ok {
+					if val != testValue {
+						t.Errorf("mismatch, got: %v wanted: %v", val, testValue)
+						continue
+					}
+				} else {
+					t.Errorf("key mismatch, got: %v wanted: %v", gotMapType, testKey)
+					continue
+				}
+			}
+		default:
+			t.Errorf("type mismatch")
 		}
 	}
 }
