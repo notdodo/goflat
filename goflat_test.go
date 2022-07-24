@@ -1,12 +1,14 @@
 package goflat
 
 import (
+	"fmt"
 	"testing"
 
 	oj "github.com/ohler55/ojg/oj"
+	"github.com/r3labs/diff"
 )
 
-func TestFlatten(t *testing.T) {
+func TestFlattenOne(t *testing.T) {
 	tests := []struct {
 		test     string
 		expected map[string]interface{}
@@ -134,5 +136,41 @@ func TestFlatten(t *testing.T) {
 		default:
 			t.Errorf("type mismatch")
 		}
+	}
+}
+
+func TestFlattenTwo(t *testing.T) {
+	type TypeStr struct {
+		Name string
+	}
+	prefix := "a-"
+	separator := "~"
+
+	typeStr := TypeStr{
+		Name: "testflat",
+	}
+
+	testStruct := struct {
+		Name string
+		ID   int64
+		Type TypeStr
+	}{
+		Name: "test",
+		ID:   int64(54),
+		Type: typeStr,
+	}
+
+	expectedMap := map[string]interface{}{
+		prefix + "ID":                        int64(54),
+		prefix + "Name":                      "test",
+		prefix + "Type" + separator + "Name": "testflat",
+	}
+
+	a, _ := FlatStruct(testStruct, prefix, separator)
+	diffs, _ := diff.Diff(a, expectedMap)
+
+	if len(diffs) > 0 {
+		fmt.Println(diffs)
+		t.Errorf("map mismatch:\ngot: %v\nwanted: %v", a, expectedMap)
 	}
 }

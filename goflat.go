@@ -9,6 +9,18 @@ import (
 
 var ErrInvalidType = errors.New("not a valid JSON input")
 
+// Convert a JSON struct to a flat Map
+func FlatStruct(str any, prefix, separator string) (flattenMap map[string]interface{}, err error) {
+	jsonBytes, err := oj.Marshal(str)
+	if err != nil {
+		return nil, err
+	}
+
+	flattenStr, _ := Flat(string(jsonBytes), prefix, separator)
+	oj.Unmarshal([]byte(flattenStr), &flattenMap)
+	return flattenMap, nil
+}
+
 // Convert a JSON string to a flat JSON string
 // Only accepted inputs are: JSON objects or array of JSON objects
 func Flat(jsonStr, prefix, separator string) (string, error) {
