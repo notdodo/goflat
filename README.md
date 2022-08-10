@@ -24,7 +24,7 @@ import (
 func main() {
 	flatten, err := Flat(goflat.Flat(`{"a": "3", "b": {"c":true}}`, "", "."), "", ".")
 	if err != nil {
-      log.Fataln(err)
+		log.Fataln(err)
 	}
 
 	fmt.Println(flatten)
