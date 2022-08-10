@@ -2,6 +2,12 @@
 
 Flatten complex JSON structures to a one-dimensional map (JSON key/value) that can be converted to a `map[string]interface{}`.
 
+`goflat` supports the flattening of:
+
+- Structs
+- JSON strings
+- Maps (after marshalling to JSON strings)
+
 ## Examples
 
 ### Using a basic JSON structure
@@ -16,7 +22,12 @@ import (
 )
 
 func main() {
-	fmt.Println(goflat.Flat(`{"a": "3", "b": {"c":true}}`, "", "."))
+	flatten, err := Flat(goflat.Flat(`{"a": "3", "b": {"c":true}}`, "", "."), "", ".")
+	if err != nil {
+      log.Fataln(err)
+	}
+
+	fmt.Println(flatten)
 }
 ```
 
@@ -38,49 +49,38 @@ For example:
 
 ```json
 [
-   {
-      "UserId":"AIDARRRRRRRRRRRR",
-      "UserName":"s3-operator",
-      "InlinePolicies":[
-         {
-            "PolicyName":"policy-s3-operator",
-            "Statement":[
-               {
-                  "Effect":"Allow",
-                  "Action":[
-                     "s3:ListAllMyBuckets"
-                  ],
-                  "Resource":[
-                     "arn:aws:s3:::*"
-                  ]
-               },
-               {
-                  "Effect":"Allow",
-                  "Action":[
-                     "s3:ListBucket",
-                     "s3:GetBucketLocation"
-                  ],
-                  "Resource":[
-                     "arn:aws:s3:::personal-s3-bucket/*"
-                  ]
-               },
-               {
-                  "Effect":"Allow",
-                  "Action":[
-                     "s3:PutObject",
-                     "s3:GetObject",
-                     "s3:AbortMultipartUpload",
-                     "s3:ListMultipartUploadParts",
-                     "s3:ListBucketMultipartUploads"
-                  ],
-                  "Resource":[
-                     "arn:aws:s3:::personal-s3-bucket/*"
-                  ]
-               }
-            ]
-         }
-      ]
-   }
+  {
+    "UserId": "AIDARRRRRRRRRRRR",
+    "UserName": "s3-operator",
+    "InlinePolicies": [
+      {
+        "PolicyName": "policy-s3-operator",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": ["s3:ListAllMyBuckets"],
+            "Resource": ["arn:aws:s3:::*"]
+          },
+          {
+            "Effect": "Allow",
+            "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+            "Resource": ["arn:aws:s3:::personal-s3-bucket/*"]
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "s3:PutObject",
+              "s3:GetObject",
+              "s3:AbortMultipartUpload",
+              "s3:ListMultipartUploadParts",
+              "s3:ListBucketMultipartUploads"
+            ],
+            "Resource": ["arn:aws:s3:::personal-s3-bucket/*"]
+          }
+        ]
+      }
+    ]
+  }
 ]
 ```
 
@@ -88,25 +88,25 @@ In this case the output will be:
 
 ```json
 [
-   {
-      "InlinePolicies.PolicyName.0":"policy-s3-operator",
-      "InlinePolicies.Statement.Action.0.0.0":"s3:ListAllMyBuckets",
-      "InlinePolicies.Statement.Action.0.1.0":"s3:ListBucket",
-      "InlinePolicies.Statement.Action.0.2.0":"s3:PutObject",
-      "InlinePolicies.Statement.Action.1.1.0":"s3:GetBucketLocation",
-      "InlinePolicies.Statement.Action.1.2.0":"s3:GetObject",
-      "InlinePolicies.Statement.Action.2.2.0":"s3:AbortMultipartUpload",
-      "InlinePolicies.Statement.Action.3.2.0":"s3:ListMultipartUploadParts",
-      "InlinePolicies.Statement.Action.4.2.0":"s3:ListBucketMultipartUploads",
-      "InlinePolicies.Statement.Effect.0.0":"Allow",
-      "InlinePolicies.Statement.Effect.1.0":"Allow",
-      "InlinePolicies.Statement.Effect.2.0":"Allow",
-      "InlinePolicies.Statement.Resource.0.0.0":"arn:aws:s3:::*",
-      "InlinePolicies.Statement.Resource.0.1.0":"arn:aws:s3:::personal-s3-bucket/*",
-      "InlinePolicies.Statement.Resource.0.2.0":"arn:aws:s3:::personal-s3-bucket/*",
-      "UserId":"AIDARRRRRRRRRRRR",
-      "UserName":"s3-operator"
-   }
+  {
+    "InlinePolicies.PolicyName.0": "policy-s3-operator",
+    "InlinePolicies.Statement.Action.0.0.0": "s3:ListAllMyBuckets",
+    "InlinePolicies.Statement.Action.0.1.0": "s3:ListBucket",
+    "InlinePolicies.Statement.Action.0.2.0": "s3:PutObject",
+    "InlinePolicies.Statement.Action.1.1.0": "s3:GetBucketLocation",
+    "InlinePolicies.Statement.Action.1.2.0": "s3:GetObject",
+    "InlinePolicies.Statement.Action.2.2.0": "s3:AbortMultipartUpload",
+    "InlinePolicies.Statement.Action.3.2.0": "s3:ListMultipartUploadParts",
+    "InlinePolicies.Statement.Action.4.2.0": "s3:ListBucketMultipartUploads",
+    "InlinePolicies.Statement.Effect.0.0": "Allow",
+    "InlinePolicies.Statement.Effect.1.0": "Allow",
+    "InlinePolicies.Statement.Effect.2.0": "Allow",
+    "InlinePolicies.Statement.Resource.0.0.0": "arn:aws:s3:::*",
+    "InlinePolicies.Statement.Resource.0.1.0": "arn:aws:s3:::personal-s3-bucket/*",
+    "InlinePolicies.Statement.Resource.0.2.0": "arn:aws:s3:::personal-s3-bucket/*",
+    "UserId": "AIDARRRRRRRRRRRR",
+    "UserName": "s3-operator"
+  }
 ]
 ```
 
@@ -114,7 +114,7 @@ The `[]map[string]interface{}` can be created using `json.Unmarshal([]byte(myJso
 
 The indexes should be read from right to left:
 
-* `InlinePolicies.Statement.Action.4.2.0`: InlinePolicies with index 0 and Statement with index 2 and Action with index 4
+- `InlinePolicies.Statement.Action.4.2.0`: InlinePolicies with index 0 and Statement with index 2 and Action with index 4
 
 ### Structs
 
@@ -149,9 +149,16 @@ func main() {
 		},
 	}
 
-	jsonStr, _ := json.Marshal(structOne)
-	fmt.Println(goflat.Flat(string(jsonStr), "", "."))
+	flatten, _ := goflat.FlatStruct(structOne, "", ".")
+	fmt.Println(flatten)
+	jsonStr, _ := json.Marshal(flatten)
+	fmt.Println(string(jsonStr))
 }
 ```
 
-The output is: `{"A":3,"B":"hello","C.D.0":10,"C.D.1":11}`
+The output is:
+
+```json
+map[A:3 B:hello C.D.0:10 C.D.1:11]
+{"A":3,"B":"hello","C.D.0":10,"C.D.1":11}
+```
