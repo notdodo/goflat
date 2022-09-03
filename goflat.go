@@ -20,8 +20,8 @@ func FlatStruct(str any, prefix, separator string) (flattenMap map[string]interf
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal([]byte(flattenStr), &flattenMap)
-	return flattenMap, nil
+	err = json.Unmarshal([]byte(flattenStr), &flattenMap)
+	return flattenMap, err
 }
 
 // Convert a JSON string to a flat JSON string
