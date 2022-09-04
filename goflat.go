@@ -76,6 +76,7 @@ func flatten(unflat interface{}, prefix, separator string, top bool) (flatMap ma
 	return
 }
 
+//nolint:unused
 func flattenArray(unflattenArrayMap []map[string]interface{}, prefix, separator string) (string, error) {
 	var outputArrayMap []map[string]interface{}
 
