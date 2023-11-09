@@ -1,4 +1,4 @@
-name: Go Build Test
+name: Go Test
 on:
   push:
     branches:
@@ -10,7 +10,7 @@ on:
       - "**.go"
 
 jobs:
-  build:
+  test:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
