@@ -2,6 +2,7 @@ package goflat
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	oj "github.com/ohler55/ojg/oj"
@@ -14,7 +15,7 @@ func TestFlattenOne(t *testing.T) {
 		expected map[string]interface{}
 	}{
 		{
-			test: `{"a":"3","c":4,"b":{"d":"5","e":6}}`,
+			test: `{"a":"3","c":4,"b":{"d":"5","e":6, "f":""}}`,
 			expected: map[string]interface{}{
 				"a":   "3",
 				"c":   int64(4),
@@ -30,12 +31,12 @@ func TestFlattenOne(t *testing.T) {
 			},
 		},
 		{
-			test: `[{"a": "3"}, {"b": "3", "C": [{"c": 10}, {"d": 11}]}]`,
+			test: `[{"a": "3"}, {"a": "3", "C": [{"c": 10}, {"d": 11}]}]`,
 			expected: map[string]interface{}{
-				"a":     "3",
-				"b":     "3",
-				"C.c.0": int64(10),
-				"C.d.1": int64(11),
+				"0.a":     "3",
+				"1.a":     "3",
+				"1.C.0.c": int64(10),
+				"1.C.1.d": int64(11),
 			},
 		},
 		{
@@ -83,58 +84,38 @@ func TestFlattenOne(t *testing.T) {
 						]
             		}]`,
 			expected: map[string]interface{}{
-				"UserId":                                  "AIDARRRRRRRRRRRR",
-				"InlinePolicies.PolicyName.0":             "policy-s3-operator",
-				"InlinePolicies.Statement.Action.4.2.0":   "s3:ListBucketMultipartUploads",
-				"InlinePolicies.Statement.Effect.1.0":     "Allow",
-				"InlinePolicies.Statement.Resource.0.1.0": "arn:aws:s3:::personal-s3-bucket/*",
+				"0.InlinePolicies.0.Statement.1.Action.0": "s3:ListBucket",
+				"0.InlinePolicies.0.Statement.2.Action.4": "s3:ListBucketMultipartUploads",
+				"0.InlinePolicies.0.Statement.2.Effect":   "Allow",
+				"0.InlinePolicies.0.Statement.1.Action.1": "s3:GetBucketLocation",
+				"0.InlinePolicies.0.Statement.2.Action.1": "s3:GetObject",
+				"0.InlinePolicies.0.Statement.2.Action.3": "s3:ListMultipartUploadParts",
+				"0.UserName": "s3-operator",
+				"0.InlinePolicies.0.Statement.0.Action.0":   "s3:ListAllMyBuckets",
+				"0.InlinePolicies.0.Statement.1.Resource.0": "arn:aws:s3:::personal-s3-bucket/*",
+				"0.InlinePolicies.0.Statement.0.Effect":     "Allow",
+				"0.UserId":                                  "AIDARRRRRRRRRRRR",
+				"0.InlinePolicies.0.Statement.0.Resource.0": "arn:aws:s3:::*",
+				"0.InlinePolicies.0.Statement.1.Effect":     "Allow",
+				"0.InlinePolicies.0.Statement.2.Action.0":   "s3:PutObject",
+				"0.InlinePolicies.0.Statement.2.Action.2":   "s3:AbortMultipartUpload",
+				"0.InlinePolicies.0.PolicyName":             "policy-s3-operator",
+				"0.InlinePolicies.0.Statement.2.Resource.0": "arn:aws:s3:::personal-s3-bucket/*",
 			},
 		},
 	}
 
 	for _, test := range tests {
-		got, err := Flat(test.test, "", ".")
-		if err != nil {
-			t.Errorf("[X] Test failed with error: %v", err)
-			continue
-		}
-
+		got, _ := FlatJSON(test.test)
 		gotMap, err := oj.ParseString(got)
 		if err != nil {
 			t.Errorf("[X] Test failed with error: %v", err)
 			continue
 		}
 
-		switch gotMapType := gotMap.(type) {
-		case []interface{}: // [{"a": 1}]
-			for testKey, testValue := range test.expected {
-				testOk := false
-				for _, gotMapTypeObject := range gotMapType {
-					if val, ok := gotMapTypeObject.(map[string]interface{})[testKey]; ok {
-						if val == testValue {
-							testOk = true
-						}
-					}
-				}
-				if !testOk {
-					t.Errorf("mismatch, got: %v wanted: %v:%v", gotMapType, testKey, testValue)
-					continue
-				}
-			}
-		case map[string]interface{}: // {"a": 1}
-			for testKey, testValue := range test.expected {
-				if val, ok := gotMapType[testKey]; ok {
-					if val != testValue {
-						t.Errorf("mismatch, got: %v wanted: %v", val, testValue)
-						continue
-					}
-				} else {
-					t.Errorf("key mismatch, got: %v wanted: %v", gotMapType, testKey)
-					continue
-				}
-			}
-		default:
-			t.Errorf("type mismatch")
+		if !reflect.DeepEqual(gotMap, test.expected) {
+			fmt.Println(diff.Diff(gotMap, test.expected))
+			t.Errorf("mismatch, got: %v wanted: %v", gotMap, test.expected)
 		}
 	}
 }
@@ -166,7 +147,10 @@ func TestFlattenTwo(t *testing.T) {
 		prefix + "Type" + separator + "Name": "testflat",
 	}
 
-	a, _ := FlatStruct(testStruct, prefix, separator)
+	a := FlatStruct(testStruct, FlattenerConfig{
+		Prefix:    prefix,
+		Separator: separator,
+	})
 	diffs, _ := diff.Diff(a, expectedMap)
 
 	if len(diffs) > 0 {
