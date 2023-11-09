@@ -132,19 +132,22 @@ func TestFlattenTwo(t *testing.T) {
 	}
 
 	testStruct := struct {
-		Name string
-		ID   int64
-		Type TypeStr
+		Name   string
+		ID     int64
+		Type   TypeStr
+		Active bool
 	}{
-		Name: "test",
-		ID:   int64(54),
-		Type: typeStr,
+		Name:   "test",
+		ID:     int64(54),
+		Type:   typeStr,
+		Active: true,
 	}
 
 	expectedMap := map[string]interface{}{
 		prefix + "ID":                        int64(54),
 		prefix + "Name":                      "test",
 		prefix + "Type" + separator + "Name": "testflat",
+		prefix + "Active":                    true,
 	}
 
 	a := FlatStruct(testStruct, FlattenerConfig{
