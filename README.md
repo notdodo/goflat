@@ -6,7 +6,7 @@ Flatten complex JSON structures to a one-dimensional map (JSON key/value) that c
 
 - Structs
 - JSON strings
-- Maps (after marshalling to JSON strings)
+- Maps
 
 ## Examples
 
@@ -17,21 +17,38 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/notdodo/goflat"
 )
 
 func main() {
-	flatten, err := Flat(goflat.Flat(`{"a": "3", "b": {"c":true}}`, "", "."), "", ".")
+	flattened, err := goflat.FlatJSON(`{"a": "3", "b": {"c":true, "a": "", "e": null}}`, goflat.FlattenerConfig{
+		Separator: ".",
+		OmitEmpty: false,
+		OmitNil:   false,
+	})
 	if err != nil {
-		log.Fataln(err)
+		log.Fatalln(err)
 	}
 
-	fmt.Println(flatten)
+	fmt.Println(flattened)
 }
 ```
 
-Output is: `{"a":"3","b.c":true}`; the sub-structure is returned as a single JSON object.
+Output is: `{"a":"3","b.a":"","b.c":true,"b.e":null}`; the sub-structure is returned as a single JSON object.
+
+To also remove the `null` you can pass the struct:
+
+```golang
+FlattenerConfig{
+		Prefix:    "",
+		Separator: ".",
+		OmitEmpty: false,
+		OmitNil:   true,
+		SortKeys:  false,
+}
+```
 
 ### Arrays
 
@@ -39,7 +56,7 @@ When dealing with arrays and recursive structures the library will handle the de
 
 Input: `[{"a": "3"}, {"b": "3", "C": [{"c": 10}, {"d": 11}]}]`
 
-Output: `[{"a":"3"},{"C.c.0":10,"C.d.1":11,"b":"3"}]`
+Output: `{"0.a":"3","1.C.0.c":10,"1.C.1.d":11,"1.b":"3"}`
 
 ### Complex JSON strings
 
@@ -84,37 +101,31 @@ For example:
 ]
 ```
 
-In this case the output will be:
+In this case the output is
 
 ```json
-[
-  {
-    "InlinePolicies.PolicyName.0": "policy-s3-operator",
-    "InlinePolicies.Statement.Action.0.0.0": "s3:ListAllMyBuckets",
-    "InlinePolicies.Statement.Action.0.1.0": "s3:ListBucket",
-    "InlinePolicies.Statement.Action.0.2.0": "s3:PutObject",
-    "InlinePolicies.Statement.Action.1.1.0": "s3:GetBucketLocation",
-    "InlinePolicies.Statement.Action.1.2.0": "s3:GetObject",
-    "InlinePolicies.Statement.Action.2.2.0": "s3:AbortMultipartUpload",
-    "InlinePolicies.Statement.Action.3.2.0": "s3:ListMultipartUploadParts",
-    "InlinePolicies.Statement.Action.4.2.0": "s3:ListBucketMultipartUploads",
-    "InlinePolicies.Statement.Effect.0.0": "Allow",
-    "InlinePolicies.Statement.Effect.1.0": "Allow",
-    "InlinePolicies.Statement.Effect.2.0": "Allow",
-    "InlinePolicies.Statement.Resource.0.0.0": "arn:aws:s3:::*",
-    "InlinePolicies.Statement.Resource.0.1.0": "arn:aws:s3:::personal-s3-bucket/*",
-    "InlinePolicies.Statement.Resource.0.2.0": "arn:aws:s3:::personal-s3-bucket/*",
-    "UserId": "AIDARRRRRRRRRRRR",
-    "UserName": "s3-operator"
-  }
-]
+{
+  "0.InlinePolicies.0.Statement.1.Action.0": "s3:ListBucket",
+  "0.InlinePolicies.0.Statement.2.Action.4": "s3:ListBucketMultipartUploads",
+  "0.InlinePolicies.0.Statement.2.Effect": "Allow",
+  "0.InlinePolicies.0.Statement.1.Action.1": "s3:GetBucketLocation",
+  "0.InlinePolicies.0.Statement.2.Action.1": "s3:GetObject",
+  "0.InlinePolicies.0.Statement.2.Action.3": "s3:ListMultipartUploadParts",
+  "0.UserName": "s3-operator",
+  "0.InlinePolicies.0.Statement.0.Action.0": "s3:ListAllMyBuckets",
+  "0.InlinePolicies.0.Statement.1.Resource.0": "arn:aws:s3:::personal-s3-bucket/*",
+  "0.InlinePolicies.0.Statement.0.Effect": "Allow",
+  "0.UserId": "AIDARRRRRRRRRRRR",
+  "0.InlinePolicies.0.Statement.0.Resource.0": "arn:aws:s3:::*",
+  "0.InlinePolicies.0.Statement.1.Effect": "Allow",
+  "0.InlinePolicies.0.Statement.2.Action.0": "s3:PutObject",
+  "0.InlinePolicies.0.Statement.2.Action.2": "s3:AbortMultipartUpload",
+  "0.InlinePolicies.0.PolicyName": "policy-s3-operator",
+  "0.InlinePolicies.0.Statement.2.Resource.0": "arn:aws:s3:::personal-s3-bucket/*"
+}
 ```
 
 The `[]map[string]interface{}` can be created using `json.Unmarshal([]byte(myJsonString), &myArrayMapStringInterface)`
-
-The indexes should be read from right to left:
-
-- `InlinePolicies.Statement.Action.4.2.0`: InlinePolicies with index 0 and Statement with index 2 and Action with index 4
 
 ### Structs
 
@@ -149,7 +160,7 @@ func main() {
 		},
 	}
 
-	flatten, _ := goflat.FlatStruct(structOne, "", ".")
+	flatten := goflat.FlatStruct(structOne)
 	fmt.Println(flatten)
 	jsonStr, _ := json.Marshal(flatten)
 	fmt.Println(string(jsonStr))
@@ -159,6 +170,6 @@ func main() {
 The output is:
 
 ```json
-map[A:3 B:hello C.D.0:10 C.D.1:11]
-{"A":3,"B":"hello","C.D.0":10,"C.D.1":11}
+map[A:3 B:hello C..0:{10} C..1:{11}]
+{"A":3,"B":"hello","C..0":{"D":10},"C..1":{"D":11}}
 ```

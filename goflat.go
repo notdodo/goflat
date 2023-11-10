@@ -22,18 +22,18 @@ type FlattenerConfig struct {
 }
 
 // DefaultFlattenerConfig returns a FlattenerConfig with default values.
-func DefaultFlattenerConfig() FlattenerConfig {
+func defaultConfiguration(config ...FlattenerConfig) FlattenerConfig {
 	return FlattenerConfig{
 		Prefix:    "",
 		Separator: ".",
-		OmitEmpty: true,
-		OmitNil:   true,
-		SortKeys:  true,
+		OmitEmpty: false,
+		OmitNil:   false,
+		SortKeys:  false,
 	}
 }
 
 func FlatStruct(input interface{}, config ...FlattenerConfig) map[string]interface{} {
-	cfg := DefaultFlattenerConfig()
+	cfg := defaultConfiguration()
 	if len(config) > 0 {
 		cfg = config[0]
 	}
@@ -43,7 +43,7 @@ func FlatStruct(input interface{}, config ...FlattenerConfig) map[string]interfa
 	if cfg.SortKeys {
 		keys := make(map[string]struct{})
 		for key := range result {
-			keys[cfg.Prefix+key] = struct{}{}
+			keys[key] = struct{}{}
 		}
 		return sortKeysAndReturnResult(result, keys)
 	}
@@ -51,7 +51,7 @@ func FlatStruct(input interface{}, config ...FlattenerConfig) map[string]interfa
 }
 
 func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
-	cfg := DefaultFlattenerConfig()
+	cfg := defaultConfiguration()
 	if len(config) > 0 {
 		cfg = config[0]
 	}
@@ -67,7 +67,7 @@ func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
 	if cfg.SortKeys {
 		keys := make(map[string]struct{})
 		for key := range flattenedMap {
-			keys[cfg.Prefix+key] = struct{}{}
+			keys[key] = struct{}{}
 		}
 		flattenedMap = sortKeysAndReturnResult(flattenedMap, keys)
 	}
