@@ -106,7 +106,12 @@ func TestFlattenOne(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, _ := FlatJSON(test.test)
+		got, _ := FlatJSON(test.test, FlattenerConfig{
+			Prefix:    "",
+			Separator: ".",
+			SortKeys:  true,
+			OmitEmpty: true,
+		})
 		gotMap, err := oj.ParseString(got)
 		if err != nil {
 			t.Errorf("[X] Test failed with error: %v", err)
@@ -154,8 +159,8 @@ func TestFlattenTwo(t *testing.T) {
 		Prefix:    prefix,
 		Separator: separator,
 	})
-	diffs, _ := diff.Diff(a, expectedMap)
 
+	diffs, _ := diff.Diff(a, expectedMap)
 	if len(diffs) > 0 {
 		fmt.Println(diffs)
 		t.Errorf("map mismatch:\ngot: %v\nwanted: %v", a, expectedMap)
