@@ -1,13 +1,12 @@
 package goflat
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
-
-	json "github.com/ohler55/ojg/oj"
 )
 
 var ErrInvalidType = errors.New("not a valid JSON input")
@@ -41,11 +40,7 @@ func FlatStruct(input interface{}, config ...FlattenerConfig) map[string]interfa
 	result := make(map[string]interface{})
 	flattenFields(reflect.ValueOf(input), cfg.Prefix, result, cfg)
 	if cfg.SortKeys {
-		keys := make(map[string]struct{})
-		for key := range result {
-			keys[key] = struct{}{}
-		}
-		return sortKeysAndReturnResult(result, keys)
+		return sortKeysAndReturnResult(result)
 	}
 	return result
 }
@@ -63,13 +58,9 @@ func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
 	}
 
 	flattenedMap := make(map[string]interface{})
-	flatten(cfg.Separator, cfg.Prefix, data, flattenedMap, cfg)
+	flatten(cfg.Prefix, data, flattenedMap, cfg)
 	if cfg.SortKeys {
-		keys := make(map[string]struct{})
-		for key := range flattenedMap {
-			keys[key] = struct{}{}
-		}
-		flattenedMap = sortKeysAndReturnResult(flattenedMap, keys)
+		flattenedMap = sortKeysAndReturnResult(flattenedMap)
 	}
 
 	flattenedJSON, err := json.Marshal(flattenedMap)
@@ -79,7 +70,33 @@ func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
 	return string(flattenedJSON), nil
 }
 
-func sortKeysAndReturnResult(result map[string]interface{}, keys map[string]struct{}) map[string]interface{} {
+func FlatJSONToMap(jsonStr string, config ...FlattenerConfig) (map[string]interface{}, error) {
+	cfg := defaultConfiguration()
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+
+	var data interface{}
+	err := json.Unmarshal([]byte(jsonStr), &data)
+	if err != nil {
+		return nil, ErrInvalidType
+	}
+
+	flattenedMap := make(map[string]interface{})
+	flatten(cfg.Prefix, data, flattenedMap, cfg)
+	if cfg.SortKeys {
+		flattenedMap = sortKeysAndReturnResult(flattenedMap)
+	}
+
+	return flattenedMap, nil
+}
+
+func sortKeysAndReturnResult(result map[string]interface{}) map[string]interface{} {
+	keys := make(map[string]string)
+	for key := range result {
+		keys[key] = ""
+	}
+
 	sortedResult := make(map[string]interface{})
 	sortedKeys := make([]string, 0, len(keys))
 	for key := range keys {
@@ -92,7 +109,7 @@ func sortKeysAndReturnResult(result map[string]interface{}, keys map[string]stru
 	return sortedResult
 }
 
-func flatten(separator, prefix string, value interface{}, result map[string]interface{}, config FlattenerConfig) {
+func flatten(prefix string, value interface{}, result map[string]interface{}, config FlattenerConfig) {
 	switch v := value.(type) {
 	case map[string]interface{}:
 		for key, val := range v {
@@ -100,7 +117,7 @@ func flatten(separator, prefix string, value interface{}, result map[string]inte
 			if prefix != "" {
 				fullKey = prefix + config.Separator + key
 			}
-			flatten(config.Separator, fullKey, val, result, config)
+			flatten(fullKey, val, result, config)
 		}
 	case []interface{}:
 		flattenArray(prefix, v, result, config)
@@ -117,7 +134,7 @@ func flattenArray(prefix string, arr []interface{}, result map[string]interface{
 		if strings.Index(fullKey, config.Separator) == 0+len(config.Prefix) {
 			fullKey = fullKey[1:]
 		}
-		flatten("", fullKey, v, result, config)
+		flatten(fullKey, v, result, config)
 	}
 }
 
@@ -151,6 +168,9 @@ func flattenArrayField(prefix, fieldName string, field reflect.Value, result map
 }
 
 func isEmptyValue(field reflect.Value) bool {
+	if !field.IsValid() || len(field.String()) == 0 {
+		return true
+	}
 	zero := reflect.Zero(field.Type())
 	return reflect.DeepEqual(field.Interface(), zero.Interface())
 }
