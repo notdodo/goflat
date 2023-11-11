@@ -341,7 +341,7 @@ func TestFlattenThree(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	json.Unmarshal([]byte(flat_user_str), &got)
+	err = json.Unmarshal([]byte(flat_user_str), &got)
 	if err != nil {
 		t.Error(err.Error())
 	}
