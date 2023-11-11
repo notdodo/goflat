@@ -324,7 +324,7 @@ func TestFlattenThree(t *testing.T) {
 		"credentialsprovidertype":  "IAM",
 	}
 
-	var user User
+	var user *User
 	var got map[string]interface{}
 
 	// Sub Test: from JSON string to String
@@ -333,9 +333,7 @@ func TestFlattenThree(t *testing.T) {
 		t.Error(err.Error())
 	}
 	flat_user_str, err := FlatJSON(test, FlattenerConfig{
-		OmitEmpty: true,
-		OmitNil:   true,
-		SortKeys:  true,
+		Separator: "",
 	})
 	if err != nil {
 		t.Error(err.Error())
@@ -348,22 +346,20 @@ func TestFlattenThree(t *testing.T) {
 
 	for k, v := range expected {
 		if got[k] != v {
-			t.Errorf("mismatch, got: %v wanted: %v", got[k], v)
+			t.Errorf("sub test 1 mismatch, got: %v wanted: %v", got[k], v)
 		}
 	}
 
 	// Sub Test: from JSON string to map
 	got, err = FlatJSONToMap(test, FlattenerConfig{
-		OmitEmpty: true,
-		OmitNil:   true,
-		SortKeys:  true,
+		Separator: "",
 	})
 	if err != nil {
 		t.Error(err.Error())
 	}
 	for k, v := range expected {
 		if got[k] != v {
-			t.Errorf("mismatch, got: %v wanted: %v", got[k], v)
+			t.Errorf("sub test 2 mismatch, got: %v wanted: %v", got[k], v)
 		}
 	}
 }
