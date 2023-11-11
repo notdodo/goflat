@@ -328,17 +328,23 @@ func TestFlattenThree(t *testing.T) {
 	var got map[string]interface{}
 
 	// Sub Test: from JSON string to String
-	json.Unmarshal([]byte(test), &user)
-	flat_user_str, e := FlatJSON(test, FlattenerConfig{
+	err := json.Unmarshal([]byte(test), &user)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	flat_user_str, err := FlatJSON(test, FlattenerConfig{
 		OmitEmpty: true,
 		OmitNil:   true,
 		SortKeys:  true,
 	})
-	if e != nil {
-		t.Error(e.Error())
+	if err != nil {
+		t.Error(err.Error())
 	}
 
 	json.Unmarshal([]byte(flat_user_str), &got)
+	if err != nil {
+		t.Error(err.Error())
+	}
 
 	for k, v := range expected {
 		if got[k] != v {
@@ -347,13 +353,13 @@ func TestFlattenThree(t *testing.T) {
 	}
 
 	// Sub Test: from JSON string to map
-	got, e = FlatJSONToMap(test, FlattenerConfig{
+	got, err = FlatJSONToMap(test, FlattenerConfig{
 		OmitEmpty: true,
 		OmitNil:   true,
 		SortKeys:  true,
 	})
-	if e != nil {
-		t.Error(e.Error())
+	if err != nil {
+		t.Error(err.Error())
 	}
 	for k, v := range expected {
 		if got[k] != v {

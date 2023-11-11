@@ -12,11 +12,13 @@ on:
       - "**.go"
 
 jobs:
-  lint:
-    name: lint
+  checks:
+    env:
+      GO111MODULE: on
+    name: checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
           go-version: "1.20"
@@ -25,27 +27,10 @@ jobs:
         with:
           version: latest
 
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: "1.20"
       - name: Install dependencies
         run: go get .
       - name: Test with the Go CLI
         run: go test
-
-  gosec:
-    runs-on: ubuntu-latest
-    env:
-      GO111MODULE: on
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@v3
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
