@@ -1,11 +1,13 @@
 package goflat
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
-	oj "github.com/ohler55/ojg/oj"
+	"github.com/ohler55/ojg/oj"
 	"github.com/r3labs/diff"
 )
 
@@ -164,5 +166,198 @@ func TestFlattenTwo(t *testing.T) {
 	if len(diffs) > 0 {
 		fmt.Println(diffs)
 		t.Errorf("map mismatch:\ngot: %v\nwanted: %v", a, expectedMap)
+	}
+}
+
+func TestFlattenThree(t *testing.T) {
+	type PasswordCredentialHash struct {
+		Algorithm     string `json:"algorithm,omitempty"`
+		Salt          string `json:"salt,omitempty"`
+		SaltOrder     string `json:"saltOrder,omitempty"`
+		Value         string `json:"value,omitempty"`
+		WorkFactorPtr *int64 `json:"workFactor,omitempty"`
+	}
+
+	type PasswordCredentialHook struct {
+		Type string `json:"type,omitempty"`
+	}
+
+	type PasswordCredential struct {
+		Hash  *PasswordCredentialHash `json:"hash,omitempty"`
+		Hook  *PasswordCredentialHook `json:"hook,omitempty"`
+		Value string                  `json:"value,omitempty"`
+	}
+
+	type AuthenticationProvider struct {
+		Name string `json:"name,omitempty"`
+		Type string `json:"type,omitempty"`
+	}
+
+	type RecoveryQuestionCredential struct {
+		Answer   string `json:"answer,omitempty"`
+		Question string `json:"question,omitempty"`
+	}
+
+	type UserCredentials struct {
+		Password         *PasswordCredential         `json:"password,omitempty"`
+		Provider         *AuthenticationProvider     `json:"provider,omitempty"`
+		RecoveryQuestion *RecoveryQuestionCredential `json:"recovery_question,omitempty"`
+	}
+
+	type UserProfile map[string]interface{}
+
+	type UserType struct {
+		Links         interface{} `json:"_links,omitempty"`
+		Created       *time.Time  `json:"created,omitempty"`
+		CreatedBy     string      `json:"createdBy,omitempty"`
+		Default       *bool       `json:"default,omitempty"`
+		Description   string      `json:"description,omitempty"`
+		DisplayName   string      `json:"displayName,omitempty"`
+		Id            string      `json:"id,omitempty"`
+		LastUpdated   *time.Time  `json:"lastUpdated,omitempty"`
+		LastUpdatedBy string      `json:"lastUpdatedBy,omitempty"`
+		Name          string      `json:"name,omitempty"`
+	}
+
+	type User struct {
+		Embedded              interface{}      `json:"_embedded,omitempty"`
+		Links                 interface{}      `json:"_links,omitempty"`
+		Activated             *time.Time       `json:"activated,omitempty"`
+		Created               *time.Time       `json:"created,omitempty"`
+		Credentials           *UserCredentials `json:"credentials,omitempty"`
+		Id                    string           `json:"id,omitempty"`
+		LastLogin             *time.Time       `json:"lastLogin,omitempty"`
+		LastUpdated           *time.Time       `json:"lastUpdated,omitempty"`
+		PasswordChanged       *time.Time       `json:"passwordChanged,omitempty"`
+		Profile               *UserProfile     `json:"profile,omitempty"`
+		Status                string           `json:"status,omitempty"`
+		StatusChanged         *time.Time       `json:"statusChanged,omitempty"`
+		TransitioningToStatus string           `json:"transitioningToStatus,omitempty"`
+		Type                  *UserType        `json:"type,omitempty"`
+	}
+
+	test := `{
+		"id": "00uuserId",
+		"status": "ACTIVE",
+		"type": {
+			"id": "user_type"
+		},
+		"profile": {
+			"lastName": "dodo",
+			"city": "City (CT)",
+			"office": "Home",
+			"title": "Software Broker",
+			"login": "notdodo@notdodo.com",
+			"employeeNumber": "123445",
+			"division": "2/3",
+			"department": "Engineering",
+			"email": "notdodo@notdodo.com",
+			"approver": "notdodo@notdodo.com",
+			"manager": "Not Dodo",
+			"nickName": "notdodo",
+			"secondEmail": "notdodo@notdodo.com",
+			"managerId": "notdodo@notdodo.com",
+			"team": "GitHub",
+			"firstName": "not",
+			"mobilePhone": null,
+			"personioArea": "Engineering",
+			"remoteHybrid": "Remote",
+			"supervisor": "Not Dodo"
+		},
+		"credentials": {
+			"password": {},
+			"provider": {
+				"type": "IAM",
+				"name": "IAM"
+			}
+		},
+		"_links": {
+			"suspend": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"schema": {
+				"href": "https://github.com/notdodo/goflat"
+			},
+			"resetPassword": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"forgotPassword": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"expirePassword": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"changeRecoveryQuestion": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"self": {
+				"href": "https://github.com/notdodo/goflat"
+			},
+			"resetFactors": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"type": {
+				"href": "https://github.com/notdodo/goflat"
+			},
+			"changePassword": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			},
+			"deactivate": {
+				"href": "https://github.com/notdodo/goflat",
+				"method": "POST"
+			}
+		}
+	}`
+
+	expected := map[string]string{
+		"profilesupervisor":        "Not Dodo",
+		"profilesecondEmail":       "notdodo@notdodo.com",
+		"_linkschangePasswordhref": "https://github.com/notdodo/goflat",
+		"id":                       "00uuserId",
+		"credentialsprovidertype":  "IAM",
+	}
+
+	var user User
+	var got map[string]interface{}
+
+	// Sub Test: from JSON string to String
+	json.Unmarshal([]byte(test), &user)
+	flat_user_str, e := FlatJSON(test, FlattenerConfig{
+		OmitEmpty: true,
+		OmitNil:   true,
+		SortKeys:  true,
+	})
+	if e != nil {
+		t.Error(e.Error())
+	}
+
+	json.Unmarshal([]byte(flat_user_str), &got)
+
+	for k, v := range expected {
+		if got[k] != v {
+			t.Errorf("mismatch, got: %v wanted: %v", got[k], v)
+		}
+	}
+
+	// Sub Test: from JSON string to map
+	got, e = FlatJSONToMap(test, FlattenerConfig{
+		OmitEmpty: true,
+		OmitNil:   true,
+		SortKeys:  true,
+	})
+	if e != nil {
+		t.Error(e.Error())
+	}
+	for k, v := range expected {
+		if got[k] != v {
+			t.Errorf("mismatch, got: %v wanted: %v", got[k], v)
+		}
 	}
 }
