@@ -38,7 +38,7 @@ func FlatStruct(input interface{}, config ...FlattenerConfig) map[string]interfa
 		cfg = config[0]
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]interface{}, 0)
 	flattenFields(reflect.ValueOf(input), cfg.Prefix, result, cfg)
 	if cfg.SortKeys {
 		return sortKeysAndReturnResult(result)
@@ -165,8 +165,10 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 		for i := 0; i < val.NumField(); i++ {
 			field := val.Field(i)
 			fieldName := typ.Field(i).Name
-			// Optionally omitting empty or nil values based on the configuration.
-			if !(config.OmitEmpty && isEmptyValue(field)) && !(config.OmitNil && isNilValue(field)) {
+			if field.Kind() == reflect.Slice || field.Kind() == reflect.Array {
+				fullKey := prefix + fieldName
+				flattenArrayFields(fullKey, "", field, result, config)
+			} else if !(config.OmitEmpty && isEmptyValue(field)) && !(config.OmitNil && isNilValue(field)) {
 				// Recursively flatten the nested structure for each struct field.
 				flattenFields(field, prefix+fieldName+config.Separator, result, config)
 			}
@@ -206,10 +208,16 @@ func flattenArrayFields(prefix, fieldName string, field reflect.Value, result ma
 		// Extract each element from the array and generate a key for it.
 		item := field.Index(i).Interface()
 		key := fmt.Sprintf("%s%s%d", prefix+fieldName+config.Separator, config.Separator, i)
-		// Optionally omitting empty or nil values based on the configuration.
-		if !(config.OmitEmpty && isEmptyValue(reflect.ValueOf(item))) && !(config.OmitNil && isNilValue(reflect.ValueOf(item))) {
-			// Add the key-value pair to the result map.
-			result[key] = item
+
+		if field.Index(i).Kind() == reflect.Ptr {
+			key = fmt.Sprintf("%s%d%s", prefix+fieldName+config.Separator, i, config.Separator)
+			flattenFields(field.Index(i), key, result, config)
+		} else {
+			// Optionally omitting empty or nil values based on the configuration.
+			if !(config.OmitEmpty && isEmptyValue(reflect.ValueOf(item))) && !(config.OmitNil && isNilValue(reflect.ValueOf(item))) {
+				// Add the key-value pair to the result map.
+				result[key] = item
+			}
 		}
 	}
 }
@@ -219,8 +227,14 @@ func isEmptyValue(field reflect.Value) bool {
 	if !field.IsValid() || !field.CanInterface() {
 		return true
 	}
-	// Check if the field is equal to its zero value.
+
 	zero := reflect.Zero(field.Type())
+
+	// if the type is bool when having false this will be erased; keep it instead
+	if field.Type().Kind() == reflect.Bool {
+		return false
+	}
+
 	return reflect.DeepEqual(field.Interface(), zero.Interface())
 }
 

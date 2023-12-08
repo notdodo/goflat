@@ -11,6 +11,61 @@ import (
 	"github.com/r3labs/diff"
 )
 
+type User struct {
+	Username string
+	Email    string
+}
+
+type Member struct {
+	User   *User
+	Role   string
+	Active bool
+}
+
+type Group struct {
+	Name    string
+	Members []*Member
+}
+
+func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
+	// Create an array of pointers to Member.
+	members := []*Member{
+		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true},
+		{User: &User{Username: "jane_doe", Email: "jane@example.com"}, Role: "User", Active: false},
+	}
+
+	// Create a Group with the array of pointers to Member.
+	group := Group{Name: "Admins", Members: members}
+
+	// Flatten the Group struct.
+	flattenedMap := FlatStruct(group, FlattenerConfig{
+		Prefix:    "",
+		Separator: ".",
+		SortKeys:  true,
+		OmitEmpty: true,
+	})
+
+	// Modify the expected map in the test function.
+	expectedMap := map[string]interface{}{
+		"Name":                    "Admins",
+		"Members.0.User.Username": "john_doe",
+		"Members.0.User.Email":    "john@example.com",
+		"Members.0.Role":          "Admin",
+		"Members.0.Active":        true,
+		"Members.1.User.Username": "jane_doe",
+		"Members.1.User.Email":    "jane@example.com",
+		"Members.1.Role":          "User",
+		"Members.1.Active":        false,
+	}
+
+	// Compare the flattened result with the expected map.
+	if !reflect.DeepEqual(flattenedMap, expectedMap) {
+		fmt.Println(flattenedMap)
+		fmt.Println(expectedMap)
+		t.Errorf("Flattened result does not match the expected map. Got: %+v, Expected: %+v", flattenedMap, expectedMap)
+	}
+}
+
 func TestFlattenOne(t *testing.T) {
 	tests := []struct {
 		test     string
