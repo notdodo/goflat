@@ -1,4 +1,4 @@
-module github.com/notdodo/goflat
+module github.com/notdodo/goflat/v2
 
 go 1.18
 
