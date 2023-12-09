@@ -28,16 +28,12 @@ type Group struct {
 }
 
 func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
-	// Create an array of pointers to Member.
 	members := []*Member{
 		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true},
 		{User: &User{Username: "jane_doe", Email: "jane@example.com"}, Role: "User", Active: false},
 	}
-
-	// Create a Group with the array of pointers to Member.
 	group := Group{Name: "Admins", Members: members}
 
-	// Flatten the Group struct.
 	flattenedMap := FlatStruct(group, FlattenerConfig{
 		Prefix:    "",
 		Separator: ".",
@@ -45,7 +41,6 @@ func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 		OmitEmpty: true,
 	})
 
-	// Modify the expected map in the test function.
 	expectedMap := map[string]interface{}{
 		"Name":                    "Admins",
 		"Members.0.User.Username": "john_doe",
@@ -58,7 +53,6 @@ func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 		"Members.1.Active":        false,
 	}
 
-	// Compare the flattened result with the expected map.
 	if !reflect.DeepEqual(flattenedMap, expectedMap) {
 		fmt.Println(flattenedMap)
 		fmt.Println(expectedMap)
@@ -416,5 +410,29 @@ func TestFlattenThree(t *testing.T) {
 		if got[k] != v {
 			t.Errorf("sub test 2 mismatch, got: %v wanted: %v", got[k], v)
 		}
+	}
+}
+
+func TestToLower(t *testing.T) {
+	members := Member{
+		User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true,
+	}
+	expected := map[string]interface{}{
+		"active":        true,
+		"role":          "Admin",
+		"user.email":    "john@example.com",
+		"user.username": "john_doe",
+	}
+
+	got := FlatStruct(members, FlattenerConfig{
+		Prefix:      "",
+		Separator:   ".",
+		SortKeys:    false,
+		OmitEmpty:   true,
+		KeysToLower: true,
+	})
+
+	if !reflect.DeepEqual(expected, got) {
+		t.Errorf("expected: %v\ngot: %v", expected, got)
 	}
 }

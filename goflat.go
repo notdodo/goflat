@@ -13,40 +13,45 @@ var ErrInvalidType = errors.New("not a valid JSON input")
 
 // `FlattenerConfig` holds configuration options for flattening.
 type FlattenerConfig struct {
-	Prefix    string
-	Separator string
-	OmitEmpty bool
-	OmitNil   bool
-	SortKeys  bool
+	Prefix      string
+	Separator   string
+	OmitEmpty   bool
+	OmitNil     bool
+	SortKeys    bool
+	KeysToLower bool
 }
 
-// `DefaultFlattenerConfig ` returns a FlattenerConfig with default values.
+// `DefaultFlattenerConfig` returns a FlattenerConfig with default values.
 func defaultConfiguration(config ...FlattenerConfig) FlattenerConfig {
 	return FlattenerConfig{
-		Prefix:    "",
-		Separator: ".",
-		OmitEmpty: false,
-		OmitNil:   false,
-		SortKeys:  false,
+		Prefix:      "",
+		Separator:   ".",
+		OmitEmpty:   false,
+		OmitNil:     false,
+		SortKeys:    false,
+		KeysToLower: false,
 	}
 }
 
-// `FlatStruct ` flattens a Go struct into a map with flattened keys.
+// `FlatStruct` flattens a Go struct into a map with flattened keys.
 func FlatStruct(input interface{}, config ...FlattenerConfig) map[string]interface{} {
 	cfg := defaultConfiguration()
 	if len(config) > 0 {
 		cfg = config[0]
 	}
 
-	result := make(map[string]interface{}, 0)
+	result := make(map[string]interface{})
 	flattenFields(reflect.ValueOf(input), cfg.Prefix, result, cfg)
 	if cfg.SortKeys {
-		return sortKeysAndReturnResult(result)
+		sortKeys(&result)
+	}
+	if cfg.KeysToLower {
+		keysToLower(&result)
 	}
 	return result
 }
 
-// `FlatJSON ` flattens a JSON string into a flattened JSON string.
+// `FlatJSON` flattens a JSON string into a flattened JSON string.
 func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
 	cfg := defaultConfiguration()
 	if len(config) > 0 {
@@ -62,9 +67,11 @@ func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
 	flattenedMap := make(map[string]interface{})
 	flatten(cfg.Prefix, data, flattenedMap, cfg)
 	if cfg.SortKeys {
-		flattenedMap = sortKeysAndReturnResult(flattenedMap)
+		sortKeys(&flattenedMap)
 	}
-
+	if cfg.KeysToLower {
+		keysToLower(&flattenedMap)
+	}
 	flattenedJSON, err := json.Marshal(flattenedMap)
 	if err != nil {
 		return "", ErrInvalidType
@@ -72,7 +79,7 @@ func FlatJSON(jsonStr string, config ...FlattenerConfig) (string, error) {
 	return string(flattenedJSON), nil
 }
 
-// `FlatJSONToMap ` flattens a JSON string into a map with flattened keys.
+// `FlatJSONToMap` flattens a JSON string into a map with flattened keys.
 func FlatJSONToMap(jsonStr string, config ...FlattenerConfig) (map[string]interface{}, error) {
 	cfg := defaultConfiguration()
 	if len(config) > 0 {
@@ -88,16 +95,18 @@ func FlatJSONToMap(jsonStr string, config ...FlattenerConfig) (map[string]interf
 	flattenedMap := make(map[string]interface{})
 	flatten(cfg.Prefix, data, flattenedMap, cfg)
 	if cfg.SortKeys {
-		flattenedMap = sortKeysAndReturnResult(flattenedMap)
+		sortKeys(&flattenedMap)
 	}
-
+	if cfg.KeysToLower {
+		keysToLower(&flattenedMap)
+	}
 	return flattenedMap, nil
 }
 
-// `sortKeysAndReturnResult ` sorts keys in the flattened structure.
-func sortKeysAndReturnResult(result map[string]interface{}) map[string]interface{} {
+// `sortKeysAndReturnResult` sorts keys in the flattened structure.
+func sortKeys(result *map[string]interface{}) {
 	keys := make(map[string]string)
-	for key := range result {
+	for key := range *result {
 		keys[key] = ""
 	}
 
@@ -108,12 +117,12 @@ func sortKeysAndReturnResult(result map[string]interface{}) map[string]interface
 	}
 	sort.Strings(sortedKeys)
 	for _, key := range sortedKeys {
-		sortedResult[key] = result[key]
+		sortedResult[key] = (*result)[key]
 	}
-	return sortedResult
+	*result = sortedResult
 }
 
-// `flatten ` flattens a nested structure into a map with flattened keys.
+// `flatten` flattens a nested structure into a map with flattened keys.
 func flatten(prefix string, value interface{}, result map[string]interface{}, config FlattenerConfig) {
 	switch v := value.(type) {
 	case map[string]interface{}:
@@ -137,7 +146,7 @@ func flatten(prefix string, value interface{}, result map[string]interface{}, co
 	}
 }
 
-// `flattenArray ` flattens an array into a map with flattened keys.
+// `flattenArray` flattens an array into a map with flattened keys.
 func flattenArray(prefix string, arr []interface{}, result map[string]interface{}, config FlattenerConfig) {
 	for i, v := range arr {
 		// Generate the full key for each element in the array.
@@ -151,7 +160,7 @@ func flattenArray(prefix string, arr []interface{}, result map[string]interface{
 	}
 }
 
-// `flattenFields ` flattens fields of a struct into a map with flattened keys.
+// `flattenFields` flattens fields of a struct into a map with flattened keys.
 func flattenFields(val reflect.Value, prefix string, result map[string]interface{}, config FlattenerConfig) {
 	typ := val.Type()
 	if val.Kind() == reflect.Ptr {
@@ -202,7 +211,7 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 	}
 }
 
-// `flattenArrayFields ` flattens fields of an array into a map with flattened keys.
+// `flattenArrayFields` flattens fields of an array into a map with flattened keys.
 func flattenArrayFields(prefix, fieldName string, field reflect.Value, result map[string]interface{}, config FlattenerConfig) {
 	for i := 0; i < field.Len(); i++ {
 		// Extract each element from the array and generate a key for it.
@@ -222,7 +231,16 @@ func flattenArrayFields(prefix, fieldName string, field reflect.Value, result ma
 	}
 }
 
-// `isEmptyValue ` checks if a reflect.Value is empty.
+// `keysToLower` return a map with all keys on lowercase
+func keysToLower(result *map[string]interface{}) {
+	new_result := make(map[string]interface{}, len(*result))
+	for k, v := range *result {
+		new_result[strings.ToLower(k)] = v
+	}
+	*result = new_result
+}
+
+// `isEmptyValue` checks if a reflect.Value is empty.
 func isEmptyValue(field reflect.Value) bool {
 	if !field.IsValid() || !field.CanInterface() {
 		return true
@@ -238,7 +256,7 @@ func isEmptyValue(field reflect.Value) bool {
 	return reflect.DeepEqual(field.Interface(), zero.Interface())
 }
 
-// `isNilValue ` checks if a reflect.Value is nil.
+// `isNilValue` checks if a reflect.Value is nil.
 func isNilValue(field reflect.Value) bool {
 	// Check if the field is a pointer and is nil.
 	return field.Kind() == reflect.Ptr && field.IsNil()
