@@ -103,7 +103,7 @@ func FlatJSONToMap(jsonStr string, config ...FlattenerConfig) (map[string]interf
 	return flattenedMap, nil
 }
 
-// `sortKeysAndReturnResult` sorts keys in the flattened structure.
+// `sortKeys` sorts keys in the flattened structure.
 func sortKeys(result *map[string]interface{}) {
 	keys := make(map[string]string)
 	for key := range *result {
