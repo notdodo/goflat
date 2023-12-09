@@ -27,6 +27,72 @@ type Group struct {
 	Members []*Member
 }
 
+func TestIsNilValue(t *testing.T) {
+	var nilPointer *int
+	result := isNilValue(reflect.ValueOf(nilPointer))
+	if !result {
+		t.Errorf("nil pointer must be nil")
+	}
+
+	nonPointerValue := 42
+	result = isNilValue(reflect.ValueOf(nonPointerValue))
+	if result {
+		t.Errorf("Expected false for non-pointer value, got true")
+	}
+}
+
+func TestIsEmptyValue(t *testing.T) {
+	var nilPointer *int
+	if !isEmptyValue(reflect.ValueOf(nilPointer)) {
+		t.Error("Expected true for nil pointer, got false")
+	}
+
+	strField := reflect.ValueOf("")
+	if !isEmptyValue(strField) {
+		t.Error("Expected true for empty string, got false")
+	}
+
+	nonEmptyStrField := reflect.ValueOf("Hello")
+	if isEmptyValue(nonEmptyStrField) {
+		t.Error("Expected false for non-empty string, got true")
+	}
+
+	intField := reflect.ValueOf(0)
+	if !isEmptyValue(intField) {
+		t.Error("Expected true for zero value int, got false")
+	}
+
+	nonZeroIntField := reflect.ValueOf(42)
+	if isEmptyValue(nonZeroIntField) {
+		t.Error("Expected false for non-zero value int, got true")
+	}
+
+	boolFalseField := reflect.ValueOf(false)
+	if isEmptyValue(boolFalseField) {
+		t.Error("Expected false for bool with value false, got true")
+	}
+
+	boolTrueField := reflect.ValueOf(true)
+	if isEmptyValue(boolTrueField) {
+		t.Error("Expected false for bool with value true, got true")
+	}
+
+	type CustomStruct struct {
+		Name string
+		Age  int
+	}
+
+	zeroStructField := reflect.ValueOf(CustomStruct{})
+	if !isEmptyValue(zeroStructField) {
+		t.Error("Expected true for zero value custom struct, got false")
+	}
+
+	nonZeroStructField := reflect.ValueOf(CustomStruct{"John", 30})
+	if isEmptyValue(nonZeroStructField) {
+		t.Error("Expected false for non-zero value custom struct, got true")
+	}
+}
+
 func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 	members := []*Member{
 		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true},

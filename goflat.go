@@ -242,17 +242,16 @@ func keysToLower(result *map[string]interface{}) {
 
 // `isEmptyValue` checks if a reflect.Value is empty.
 func isEmptyValue(field reflect.Value) bool {
-	if !field.IsValid() || !field.CanInterface() {
-		return true
-	}
-
-	zero := reflect.Zero(field.Type())
-
 	// if the type is bool when having false this will be erased; keep it instead
 	if field.Type().Kind() == reflect.Bool {
 		return false
 	}
 
+	if !field.IsValid() || !field.CanInterface() {
+		return true
+	}
+
+	zero := reflect.Zero(field.Type())
 	return reflect.DeepEqual(field.Interface(), zero.Interface())
 }
 
