@@ -1,0 +1,25 @@
+name: Golang CI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+  pull_request:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+
+concurrency:
+  group: goflat-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    uses: notdodo/github-actions/.github/workflows/go-security-scan.yml@a61f17e4551042735886e3c91a1af1c6a743b465
+
+  build-and-test:
+    uses: notdodo/github-actions/.github/workflows/go-build-and-test.yml@a61f17e4551042735886e3c91a1af1c6a743b465
