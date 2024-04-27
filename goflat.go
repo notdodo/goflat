@@ -22,12 +22,12 @@ type FlattenerConfig struct {
 }
 
 // `DefaultFlattenerConfig` returns a FlattenerConfig with default values.
-func defaultConfiguration(config ...FlattenerConfig) FlattenerConfig {
+func defaultConfiguration() FlattenerConfig {
 	return FlattenerConfig{
 		Prefix:      "",
 		Separator:   ".",
-		OmitEmpty:   false,
-		OmitNil:     false,
+		OmitEmpty:   true,
+		OmitNil:     true,
 		SortKeys:    false,
 		KeysToLower: false,
 	}
@@ -206,7 +206,14 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 		// If the value is neither a struct nor a map, add it to the result map.
 		// Optionally omitting empty or nil values based on the configuration.
 		if !(config.OmitEmpty && isEmptyValue(val)) && !(config.OmitNil && isNilValue(val)) {
-			result[prefix[:len(prefix)-1]] = val.Interface()
+			prefix = prefix[:len(prefix)-1]
+			// If `val` is a valid JSON likely this was *string; flat it
+			if js := isJSON(val.String()); js != nil {
+				flatMap, _ := FlatJSONToMap(val.String(), config)
+				flatten(prefix, flatMap, result, config)
+			} else {
+				result[prefix] = val.Interface()
+			}
 		}
 	}
 }
@@ -259,4 +266,13 @@ func isEmptyValue(field reflect.Value) bool {
 func isNilValue(field reflect.Value) bool {
 	// Check if the field is a pointer and is nil.
 	return field.Kind() == reflect.Ptr && field.IsNil()
+}
+
+// `jsJSON` checks if a string it's a valid JSON string.
+func isJSON(str string) json.RawMessage {
+	var js json.RawMessage
+	if err := json.Unmarshal([]byte(str), &js); err != nil {
+		return nil
+	}
+	return js
 }

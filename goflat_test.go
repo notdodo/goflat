@@ -17,9 +17,10 @@ type User struct {
 }
 
 type Member struct {
-	User   *User
-	Role   string
-	Active bool
+	User     *User
+	Role     string
+	Active   bool
+	SubField *string
 }
 
 type Group struct {
@@ -94,8 +95,24 @@ func TestIsEmptyValue(t *testing.T) {
 }
 
 func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
+	s := `[{
+			"PolicyName": "policy-s3-operator",
+			"Statement": [
+				{
+				"Effect": "Allow",
+				"Action": [
+					"s3:PutObject",
+					"s3:GetObject"
+				],
+				"Resource": [
+					"arn:aws:s3:::personal-s3-bucket/*"
+				]
+				}
+			]
+		}]`
+
 	members := []*Member{
-		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true},
+		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true, SubField: &s},
 		{User: &User{Username: "jane_doe", Email: "jane@example.com"}, Role: "User", Active: false},
 	}
 	group := Group{Name: "Admins", Members: members}
@@ -108,20 +125,24 @@ func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 	})
 
 	expectedMap := map[string]interface{}{
-		"Name":                    "Admins",
-		"Members.0.User.Username": "john_doe",
-		"Members.0.User.Email":    "john@example.com",
-		"Members.0.Role":          "Admin",
-		"Members.0.Active":        true,
-		"Members.1.User.Username": "jane_doe",
-		"Members.1.User.Email":    "jane@example.com",
-		"Members.1.Role":          "User",
-		"Members.1.Active":        false,
+		"Name":                                        "Admins",
+		"Members.0.User.Username":                     "john_doe",
+		"Members.0.User.Email":                        "john@example.com",
+		"Members.0.Role":                              "Admin",
+		"Members.0.Active":                            true,
+		"Members.1.User.Username":                     "jane_doe",
+		"Members.1.User.Email":                        "jane@example.com",
+		"Members.1.Role":                              "User",
+		"Members.1.Active":                            false,
+		"Members.0.SubField.0.PolicyName":             "policy-s3-operator",
+		"Members.0.SubField.0.Statement.0.Effect":     "Allow",
+		"Members.0.SubField.0.Statement.0.Action.0":   "s3:PutObject",
+		"Members.0.SubField.0.Statement.0.Action.1":   "s3:GetObject",
+		"Members.0.SubField.0.Statement.0.Resource.0": "arn:aws:s3:::personal-s3-bucket/*",
 	}
 
 	if !reflect.DeepEqual(flattenedMap, expectedMap) {
-		fmt.Println(flattenedMap)
-		fmt.Println(expectedMap)
+		fmt.Println(diff.Diff(flattenedMap, expectedMap))
 		t.Errorf("Flattened result does not match the expected map. Got: %+v, Expected: %+v", flattenedMap, expectedMap)
 	}
 }

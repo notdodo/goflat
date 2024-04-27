@@ -7,11 +7,13 @@ on:
       - "**.go"
       - "go.mod"
       - "go.sum"
+      - ".github/workflows/go-ci.yml"
   pull_request:
     paths:
       - "**.go"
       - "go.mod"
       - "go.sum"
+      - ".github/workflows/go-ci.yml"
 
 concurrency:
   group: goflat-go-ci-${{ github.ref }}
@@ -19,9 +21,7 @@ concurrency:
 
 jobs:
   sast:
-    uses: notdodo/github-actions/.github/workflows/go-security-scan.yml@2e84638563b65587b42ba8ab87ccdf1922c412dd
-    # go-sec-v0.0.0
+    uses: notdodo/github-actions/.github/workflows/go-security-scan.yml@go-sec-v0
 
   build-and-test:
-    uses: notdodo/github-actions/.github/workflows/go-ci.yml@2e84638563b65587b42ba8ab87ccdf1922c412dd
-    # go-ci-v0.0.0
+    uses: notdodo/github-actions/.github/workflows/go-ci.yml@go-ci-v0
