@@ -1,5 +1,7 @@
 # goflat
 
+[![Golang CI](https://github.com/notdodo/goflat/actions/workflows/go-ci.yml/badge.svg)](https://github.com/notdodo/goflat/actions/workflows/go-ci.yml)
+
 Flatten complex JSON structures to a one-dimensional map (JSON key/value) that can be converted to a `map[string]interface{}`.
 
 `goflat` supports the flattening of:
