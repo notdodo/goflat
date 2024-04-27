@@ -205,7 +205,7 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 	default:
 		// If the value is neither a struct nor a map, add it to the result map.
 		// Optionally omitting empty or nil values based on the configuration.
-		if !(config.OmitEmpty && isEmptyValue(val)) && !(config.OmitNil && isNilValue(val)) {
+		if !(config.OmitEmpty && isEmptyValue(val)) && !(config.OmitNil && isNilValue(val)) && val.CanInterface() {
 			prefix = prefix[:len(prefix)-1]
 			// If `val` is a valid JSON likely this was *string; flat it
 			if js := isJSON(val.String()); js != nil {

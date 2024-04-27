@@ -12,8 +12,9 @@ import (
 )
 
 type User struct {
-	Username string
-	Email    string
+	Username    string
+	Email       string
+	notExported bool
 }
 
 type Member struct {
@@ -112,7 +113,7 @@ func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 		}]`
 
 	members := []*Member{
-		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true, SubField: &s},
+		{User: &User{Username: "john_doe", Email: "john@example.com", notExported: true}, Role: "Admin", Active: true, SubField: &s},
 		{User: &User{Username: "jane_doe", Email: "jane@example.com"}, Role: "User", Active: false},
 	}
 	group := Group{Name: "Admins", Members: members}
