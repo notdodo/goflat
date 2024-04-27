@@ -271,6 +271,8 @@ func isNilValue(field reflect.Value) bool {
 // `jsJSON` checks if a string it's a valid JSON string.
 func isJSON(str string) json.RawMessage {
 	var js json.RawMessage
-	json.Unmarshal([]byte(str), &js)
+	if err := json.Unmarshal([]byte(str), &js); err != nil {
+		return nil
+	}
 	return js
 }
