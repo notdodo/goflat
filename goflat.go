@@ -163,7 +163,7 @@ func flattenArray(prefix string, arr []interface{}, result map[string]interface{
 // `flattenFields` flattens fields of a struct into a map with flattened keys.
 func flattenFields(val reflect.Value, prefix string, result map[string]interface{}, config FlattenerConfig) {
 	typ := val.Type()
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Ptr && !val.IsNil() {
 		val = val.Elem()
 		typ = val.Type()
 	}
@@ -250,7 +250,7 @@ func keysToLower(result *map[string]interface{}) {
 // `isEmptyValue` checks if a reflect.Value is empty.
 func isEmptyValue(field reflect.Value) bool {
 	// if the type is bool when having false this will be erased; keep it instead
-	if field.Type().Kind() == reflect.Bool {
+	if field.IsValid() && field.Type().Kind() == reflect.Bool {
 		return false
 	}
 
