@@ -12,8 +12,9 @@ import (
 )
 
 type User struct {
-	Username string
-	Email    string
+	Username    string
+	Email       string
+	notExported bool
 }
 
 type Member struct {
@@ -112,7 +113,7 @@ func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 		}]`
 
 	members := []*Member{
-		{User: &User{Username: "john_doe", Email: "john@example.com"}, Role: "Admin", Active: true, SubField: &s},
+		{User: &User{Username: "john_doe", Email: "john@example.com", notExported: true}, Role: "Admin", Active: true, SubField: &s},
 		{User: &User{Username: "jane_doe", Email: "jane@example.com"}, Role: "User", Active: false},
 	}
 	group := Group{Name: "Admins", Members: members}
@@ -149,11 +150,13 @@ func TestFlattenStructWithArrayOfPointersInGroup(t *testing.T) {
 
 func TestFlattenOne(t *testing.T) {
 	tests := []struct {
-		test     string
+		input    string
+		name     string
 		expected map[string]interface{}
 	}{
 		{
-			test: `{"a":"3","c":4,"b":{"d":"5","e":6, "f":""}}`,
+			name:  "SimpleJSONStringWithNestedAndEmptyValues",
+			input: `{"a":"3","c":4,"b":{"d":"5","e":6, "f":""}}`,
 			expected: map[string]interface{}{
 				"a":   "3",
 				"c":   int64(4),
@@ -162,14 +165,16 @@ func TestFlattenOne(t *testing.T) {
 			},
 		},
 		{
-			test: `{"a": "3", "b": {"c":true}}`,
+			name:  "SimpleJSONStringWithBool",
+			input: `{"a": "3", "b": {"c":true}}`,
 			expected: map[string]interface{}{
 				"a":   "3",
 				"b.c": true,
 			},
 		},
 		{
-			test: `[{"a": "3"}, {"a": "3", "C": [{"c": 10}, {"d": 11}]}]`,
+			name:  "SimpleJSONStringArrayWithArrays",
+			input: `[{"a": "3"}, {"a": "3", "C": [{"c": 10}, {"d": 11}]}]`,
 			expected: map[string]interface{}{
 				"0.a":     "3",
 				"1.a":     "3",
@@ -178,7 +183,8 @@ func TestFlattenOne(t *testing.T) {
 			},
 		},
 		{
-			test: `[{
+			name: "AWSJSONPolicy",
+			input: `[{
 						"UserId": "AIDARRRRRRRRRRRR",
         			 	"UserName": "s3-operator",
         			 	"InlinePolicies": [
@@ -244,22 +250,23 @@ func TestFlattenOne(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, _ := FlatJSON(test.test, FlattenerConfig{
-			Prefix:    "",
-			Separator: ".",
-			SortKeys:  true,
-			OmitEmpty: true,
-		})
-		gotMap, err := oj.ParseString(got)
-		if err != nil {
-			t.Errorf("[X] Test failed with error: %v", err)
-			continue
-		}
+		t.Run(test.name, func(t *testing.T) {
+			got, _ := FlatJSON(test.input, FlattenerConfig{
+				Prefix:    "",
+				Separator: ".",
+				SortKeys:  true,
+				OmitEmpty: true,
+			})
+			gotMap, err := oj.ParseString(got)
+			if err != nil {
+				t.Errorf("failed to parse flattened JSON: %v", err)
+				return
+			}
 
-		if !reflect.DeepEqual(gotMap, test.expected) {
-			fmt.Println(diff.Diff(gotMap, test.expected))
-			t.Errorf("mismatch, got: %v wanted: %v", gotMap, test.expected)
-		}
+			if !reflect.DeepEqual(gotMap, test.expected) {
+				t.Errorf("mismatch, got: %v, expected: %v", gotMap, test.expected)
+			}
+		})
 	}
 }
 
