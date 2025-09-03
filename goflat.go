@@ -206,7 +206,7 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 	default:
 		// If the value is neither a struct nor a map, add it to the result map.
 		// Optionally omitting empty or nil values based on the configuration.
-		if !(config.OmitEmpty && isEmptyValue(val)) && !(config.OmitNil && isNilValue(val)) && val.CanInterface() {
+		if (config.OmitEmpty || !isEmptyValue(val)) && (!config.OmitNil || !isNilValue(val)) && val.CanInterface() {
 			prefix = prefix[:len(prefix)-1]
 			// If `val` is a valid JSON likely this was *string; flat it
 			if js := isJSON(val.String()); js != nil {
@@ -231,7 +231,8 @@ func flattenArrayFields(prefix, fieldName string, field reflect.Value, result ma
 			flattenFields(field.Index(i), key, result, config)
 		} else {
 			// Optionally omitting empty or nil values based on the configuration.
-			if !(config.OmitEmpty && isEmptyValue(reflect.ValueOf(item))) && !(config.OmitNil && isNilValue(reflect.ValueOf(item))) {
+			val := reflect.ValueOf(item)
+			if (!config.OmitEmpty || !isEmptyValue(val)) && (!config.OmitNil || !isNilValue(val)) {
 				// Add the key-value pair to the result map.
 				result[key] = item
 			}
