@@ -140,7 +140,8 @@ func flatten(prefix string, value interface{}, result map[string]interface{}, co
 	default:
 		// If the value is neither a map nor an array, add it to the result map.
 		// Optionally omitting empty or nil values based on the configuration.
-		if !(config.OmitEmpty && isEmptyValue(reflect.ValueOf(v))) && !(config.OmitNil && isNilValue(reflect.ValueOf(v))) {
+		val := reflect.ValueOf(v)
+		if (!config.OmitEmpty || !isEmptyValue(val)) && (!config.OmitNil || !isNilValue(val)) {
 			result[prefix] = v
 		}
 	}
@@ -177,7 +178,7 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 			if field.Kind() == reflect.Slice || field.Kind() == reflect.Array {
 				fullKey := prefix + fieldName
 				flattenArrayFields(fullKey, "", field, result, config)
-			} else if !(config.OmitEmpty && isEmptyValue(field)) && !(config.OmitNil && isNilValue(field)) {
+			} else if (!config.OmitEmpty || !isEmptyValue(field)) && (!config.OmitNil || !isNilValue(field)) {
 				// Recursively flatten the nested structure for each struct field.
 				flattenFields(field, prefix+fieldName+config.Separator, result, config)
 			}
@@ -189,7 +190,7 @@ func flattenFields(val reflect.Value, prefix string, result map[string]interface
 			fieldName := key.String()
 			fullKey := prefix + fieldName
 			// Optionally omitting empty or nil values based on the configuration.
-			if !(config.OmitEmpty && isEmptyValue(field)) && !(config.OmitNil && isNilValue(field)) {
+			if (!config.OmitEmpty || !isEmptyValue(field)) && (!config.OmitNil || !isNilValue(field)) {
 				if field.Kind() == reflect.Struct {
 					// If the value is a struct, recursively flatten the nested structure.
 					flattenFields(field, fullKey+config.Separator, result, config)
