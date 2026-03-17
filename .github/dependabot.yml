@@ -6,9 +6,13 @@ updates:
       interval: monthly
       time: "12:00"
       day: monday
+    cooldown:
+      default-days: 7
   - package-ecosystem: github-actions
     directory: .github
     schedule:
       interval: monthly
       time: "12:00"
       day: wednesday
+    cooldown:
+      default-days: 7
