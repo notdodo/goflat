@@ -5,6 +5,6 @@ go 1.24
 toolchain go1.24.1
 
 require (
-	github.com/ohler55/ojg v1.28.0 // test
+	github.com/ohler55/ojg v1.28.1 // test
 	github.com/r3labs/diff v1.1.0 // test
 )
