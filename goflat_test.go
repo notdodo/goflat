@@ -348,21 +348,21 @@ func TestFlattenThree(t *testing.T) {
 	type UserProfile map[string]any
 
 	type UserType struct {
-		Links         any `json:"_links,omitempty"`
-		Created       *time.Time  `json:"created,omitempty"`
-		CreatedBy     string      `json:"createdBy,omitempty"`
-		Default       *bool       `json:"default,omitempty"`
-		Description   string      `json:"description,omitempty"`
-		DisplayName   string      `json:"displayName,omitempty"`
-		Id            string      `json:"id,omitempty"`
-		LastUpdated   *time.Time  `json:"lastUpdated,omitempty"`
-		LastUpdatedBy string      `json:"lastUpdatedBy,omitempty"`
-		Name          string      `json:"name,omitempty"`
+		Links         any        `json:"_links,omitempty"`
+		Created       *time.Time `json:"created,omitempty"`
+		CreatedBy     string     `json:"createdBy,omitempty"`
+		Default       *bool      `json:"default,omitempty"`
+		Description   string     `json:"description,omitempty"`
+		DisplayName   string     `json:"displayName,omitempty"`
+		Id            string     `json:"id,omitempty"`
+		LastUpdated   *time.Time `json:"lastUpdated,omitempty"`
+		LastUpdatedBy string     `json:"lastUpdatedBy,omitempty"`
+		Name          string     `json:"name,omitempty"`
 	}
 
 	type User struct {
-		Embedded              any      `json:"_embedded,omitempty"`
-		Links                 any      `json:"_links,omitempty"`
+		Embedded              any              `json:"_embedded,omitempty"`
+		Links                 any              `json:"_links,omitempty"`
 		Activated             *time.Time       `json:"activated,omitempty"`
 		Created               *time.Time       `json:"created,omitempty"`
 		Credentials           *UserCredentials `json:"credentials,omitempty"`

@@ -130,7 +130,7 @@ func flattenArray(prefix string, arr []any, result map[string]any, config Flatte
 
 // resolveValue unwraps pointer and interface wrappers to get the underlying value.
 func resolveValue(val reflect.Value) reflect.Value {
-	for val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
+	for val.Kind() == reflect.Pointer || val.Kind() == reflect.Interface {
 		if val.IsNil() {
 			return val
 		}
